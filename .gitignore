@@ -1,0 +1,7 @@
+data/
+.env
+*.local.json
+profile.json
+*.db
+__pycache__/
+.venv/

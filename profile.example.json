@@ -1,0 +1,59 @@
+{
+  "contact": {
+    "name": "",
+    "email": "",
+    "phone": "",
+    "location": "",
+    "linkedin_url": null,
+    "github_url": null,
+    "portfolio_url": null
+  },
+  "experiences": [
+    {
+      "company": "",
+      "title": "",
+      "start_date": "2020-01-01",
+      "end_date": null,
+      "location": "",
+      "bullets": [""],
+      "type": "work"
+    }
+  ],
+  "education": [
+    {
+      "institution": "",
+      "degree": "",
+      "field": "",
+      "start_date": "2020-01-01",
+      "end_date": null,
+      "gpa": null
+    }
+  ],
+  "certifications": [
+    {
+      "name": "",
+      "issuer": "",
+      "date_earned": "2020-01-01",
+      "credential_url": null
+    }
+  ],
+  "skills": [
+    {
+      "name": "",
+      "category": ""
+    }
+  ],
+  "projects": [
+    {
+      "name": "",
+      "description": "",
+      "github_url": null,
+      "tech_stack": [""],
+      "bullets": [""],
+      "readme": null,
+      "featured": false,
+      "source": "manual",
+      "github_repo_id": null
+    }
+  ]
+}
