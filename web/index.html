@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>AI-Assisted Resume Builder</title>
+<style>
+  :root {
+    --bg: #0f0f0e;
+    --surface: #1a1918;
+    --surface-2: #242220;
+    --border: #35322e;
+    --text: #ececea;
+    --text-muted: #9a978f;
+    --accent: #d85a30;
+    --accent-hover: #c14e28;
+    --danger: #e05252;
+    --success: #4ecb9a;
+  }
+  * { box-sizing: border-box; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 2.5rem 1.5rem 5rem;
+    line-height: 1.5;
+  }
+  h1 { font-size: 1.6rem; margin-bottom: 0.25rem; }
+  .subtitle { color: var(--text-muted); margin-bottom: 1.5rem; font-size: 0.95rem; }
+  .notice {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: 6px;
+    padding: 0.9rem 1.1rem;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    margin-bottom: 2rem;
+  }
+  .notice strong { color: var(--text); }
+  fieldset {
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.2rem 1.3rem 1.4rem;
+    margin-bottom: 1.4rem;
+  }
+  legend {
+    padding: 0 0.5rem;
+    font-weight: 600;
+    font-size: 0.95rem;
+  }
+  label {
+    display: block;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    margin-bottom: 0.25rem;
+    margin-top: 0.7rem;
+  }
+  label:first-child { margin-top: 0; }
+  input[type="text"], input[type="email"], input[type="password"],
+  input[type="date"], input[type="number"], textarea {
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    padding: 0.55rem 0.7rem;
+    font-size: 0.9rem;
+    font-family: inherit;
+  }
+  input:focus, textarea:focus {
+    outline: none;
+    border-color: var(--accent);
+  }
+  textarea { resize: vertical; min-height: 70px; }
+  .row { display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem; }
+  .row3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.8rem; }
+  .entry-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 0.9rem 1rem 1rem;
+    margin-top: 0.9rem;
+    position: relative;
+  }
+  .entry-card:first-of-type { margin-top: 0.9rem; }
+  .remove-btn {
+    position: absolute;
+    top: 0.6rem;
+    right: 0.6rem;
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: 0.8rem;
+  }
+  .remove-btn:hover { color: var(--danger); }
+  .add-btn {
+    margin-top: 0.9rem;
+    background: var(--surface-2);
+    border: 1px dashed var(--border);
+    border-radius: 6px;
+    color: var(--text-muted);
+    padding: 0.5rem 0.9rem;
+    cursor: pointer;
+    font-size: 0.85rem;
+    width: 100%;
+  }
+  .add-btn:hover { border-color: var(--accent); color: var(--text); }
+  .checkbox-row { display: flex; align-items: center; gap: 0.4rem; margin-top: 0.7rem; }
+  .checkbox-row input { width: auto; }
+  .checkbox-row label { margin: 0; font-size: 0.85rem; color: var(--text); }
+  #submit-btn {
+    width: 100%;
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    padding: 0.85rem;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    margin-top: 0.5rem;
+  }
+  #submit-btn:hover { background: var(--accent-hover); }
+  #submit-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  #status {
+    margin-top: 1rem;
+    font-size: 0.9rem;
+    padding: 0.8rem 1rem;
+    border-radius: 6px;
+    display: none;
+  }
+  #status.show { display: block; }
+  #status.loading { background: var(--surface-2); color: var(--text-muted); }
+  #status.error { background: #2a1414; color: var(--danger); border: 1px solid #4a2020; }
+  #status.success { background: #142a20; color: var(--success); border: 1px solid #205a3f; }
+  .hint { font-size: 0.75rem; color: var(--text-muted); margin-top: 0.3rem; }
+  footer { text-align: center; color: var(--text-muted); font-size: 0.8rem; margin-top: 3rem; }
+  footer a { color: var(--accent); }
+</style>
+</head>
+<body>
+
+<h1>AI-Assisted Resume Builder</h1>
+<p class="subtitle">Pulls your GitHub projects, researches a company and role, and writes you a tailored resume — nothing you enter here is stored.</p>
+
+<div class="notice">
+  <strong>Your API keys are used only for this one request and never stored, logged, or reused.</strong>
+  Everything runs in memory and is discarded once your resume downloads. Typical cost: about $0.30, billed to your own Anthropic account.
+</div>
+
+<form id="resume-form">
+
+  <fieldset>
+    <legend>Your keys</legend>
+    <label for="github_username">GitHub username</label>
+    <input type="text" id="github_username" required placeholder="octocat" />
+
+    <label for="github_token">GitHub token (optional — raises the rate limit)</label>
+    <input type="password" id="github_token" placeholder="ghp_..." />
+
+    <label for="anthropic_api_key">Anthropic API key</label>
+    <input type="password" id="anthropic_api_key" required placeholder="sk-ant-..." />
+    <p class="hint">Get one at console.anthropic.com. Not stored.</p>
+  </fieldset>
+
+  <fieldset>
+    <legend>Contact info</legend>
+    <label for="c-name">Full name</label>
+    <input type="text" id="c-name" required />
+    <div class="row">
+      <div>
+        <label for="c-email">Email</label>
+        <input type="email" id="c-email" />
+      </div>
+      <div>
+        <label for="c-phone">Phone</label>
+        <input type="text" id="c-phone" />
+      </div>
+    </div>
+    <label for="c-location">Location</label>
+    <input type="text" id="c-location" placeholder="Melbourne, VIC" />
+    <label for="c-links">Links (comma-separated — LinkedIn, portfolio, etc.)</label>
+    <input type="text" id="c-links" placeholder="linkedin.com/in/you, github.com/you" />
+  </fieldset>
+
+  <fieldset>
+    <legend>Experience</legend>
+    <div id="experience-list"></div>
+    <button type="button" class="add-btn" id="add-experience">+ Add experience</button>
+  </fieldset>
+
+  <fieldset>
+    <legend>Education</legend>
+    <div id="education-list"></div>
+    <button type="button" class="add-btn" id="add-education">+ Add education</button>
+  </fieldset>
+
+  <fieldset>
+    <legend>Certifications</legend>
+    <div id="certification-list"></div>
+    <button type="button" class="add-btn" id="add-certification">+ Add certification</button>
+  </fieldset>
+
+  <fieldset>
+    <legend>The job</legend>
+    <label for="company_name">Company name</label>
+    <input type="text" id="company_name" required />
+    <label for="role_title">Role title (optional — taken from the JD if left blank)</label>
+    <input type="text" id="role_title" />
+    <label for="jd_text">Job description</label>
+    <textarea id="jd_text" required style="min-height: 160px;"></textarea>
+  </fieldset>
+
+  <button type="submit" id="submit-btn">Generate my resume</button>
+  <div id="status"></div>
+</form>
+
+<footer>
+  Public on <a href="#" id="repo-link" target="_blank">GitHub</a> — clone it and run it yourself if you'd rather not paste your keys here.
+</footer>
+
+<script>
+let expCount = 0, eduCount = 0, certCount = 0;
+
+function addExperience() {
+  const id = expCount++;
+  const div = document.createElement('div');
+  div.className = 'entry-card';
+  div.dataset.id = id;
+  div.innerHTML = `
+    <button type="button" class="remove-btn" onclick="this.parentElement.remove()">Remove</button>
+    <div class="row">
+      <div><label>Company</label><input type="text" class="exp-company" required></div>
+      <div><label>Title</label><input type="text" class="exp-title" required></div>
+    </div>
+    <div class="row3">
+      <div><label>Type</label>
+        <select class="exp-type" style="width:100%;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:0.55rem 0.7rem;">
+          <option value="work">Work</option>
+          <option value="volunteer">Volunteer</option>
+          <option value="extracurricular">Extracurricular</option>
+        </select>
+      </div>
+      <div><label>Start date</label><input type="date" class="exp-start" required></div>
+      <div><label>End date (blank = present)</label><input type="date" class="exp-end"></div>
+    </div>
+    <label>Location</label><input type="text" class="exp-location">
+    <label>Bullets (one per line)</label>
+    <textarea class="exp-bullets" placeholder="Built X using Y, resulting in Z"></textarea>
+  `;
+  document.getElementById('experience-list').appendChild(div);
+}
+
+function addEducation() {
+  const div = document.createElement('div');
+  div.className = 'entry-card';
+  div.innerHTML = `
+    <button type="button" class="remove-btn" onclick="this.parentElement.remove()">Remove</button>
+    <div class="row">
+      <div><label>Institution</label><input type="text" class="edu-institution" required></div>
+      <div><label>Degree</label><input type="text" class="edu-degree" required></div>
+    </div>
+    <div class="row3">
+      <div><label>Field</label><input type="text" class="edu-field"></div>
+      <div><label>Start date</label><input type="date" class="edu-start" required></div>
+      <div><label>End date</label><input type="date" class="edu-end"></div>
+    </div>
+    <label>GPA (optional)</label><input type="number" step="0.01" class="edu-gpa">
+  `;
+  document.getElementById('education-list').appendChild(div);
+}
+
+function addCertification() {
+  const div = document.createElement('div');
+  div.className = 'entry-card';
+  div.innerHTML = `
+    <button type="button" class="remove-btn" onclick="this.parentElement.remove()">Remove</button>
+    <div class="row">
+      <div><label>Name</label><input type="text" class="cert-name" required></div>
+      <div><label>Issuer</label><input type="text" class="cert-issuer" required></div>
+    </div>
+    <label>Date earned</label><input type="date" class="cert-date" required>
+  `;
+  document.getElementById('certification-list').appendChild(div);
+}
+
+document.getElementById('add-experience').onclick = addExperience;
+document.getElementById('add-education').onclick = addEducation;
+document.getElementById('add-certification').onclick = addCertification;
+
+// Start with one of each so the form doesn't look empty.
+addExperience();
+addEducation();
+addCertification();
+
+function collectExperiences() {
+  return [...document.querySelectorAll('#experience-list .entry-card')].map(card => ({
+    company: card.querySelector('.exp-company').value,
+    title: card.querySelector('.exp-title').value,
+    type: card.querySelector('.exp-type').value,
+    location: card.querySelector('.exp-location').value || null,
+    start_date: card.querySelector('.exp-start').value,
+    end_date: card.querySelector('.exp-end').value || null,
+    bullets: card.querySelector('.exp-bullets').value.split('\n').map(b => b.trim()).filter(Boolean),
+  }));
+}
+
+function collectEducation() {
+  return [...document.querySelectorAll('#education-list .entry-card')].map(card => ({
+    institution: card.querySelector('.edu-institution').value,
+    degree: card.querySelector('.edu-degree').value,
+    field: card.querySelector('.edu-field').value || null,
+    start_date: card.querySelector('.edu-start').value,
+    end_date: card.querySelector('.edu-end').value || null,
+    gpa: card.querySelector('.edu-gpa').value ? parseFloat(card.querySelector('.edu-gpa').value) : null,
+  }));
+}
+
+function collectCertifications() {
+  return [...document.querySelectorAll('#certification-list .entry-card')].map(card => ({
+    name: card.querySelector('.cert-name').value,
+    issuer: card.querySelector('.cert-issuer').value,
+    date_earned: card.querySelector('.cert-date').value,
+  }));
+}
+
+function setStatus(message, kind) {
+  const el = document.getElementById('status');
+  el.textContent = message;
+  el.className = 'show ' + kind;
+}
+
+document.getElementById('resume-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const btn = document.getElementById('submit-btn');
+  btn.disabled = true;
+  setStatus('Fetching your GitHub projects, researching the company, and writing your resume — this takes 20 to 40 seconds…', 'loading');
+
+  const links = document.getElementById('c-links').value
+    .split(',').map(s => s.trim()).filter(Boolean);
+
+  const payload = {
+    github_username: document.getElementById('github_username').value,
+    github_token: document.getElementById('github_token').value || null,
+    anthropic_api_key: document.getElementById('anthropic_api_key').value,
+    company_name: document.getElementById('company_name').value,
+    role_title: document.getElementById('role_title').value || null,
+    jd_text: document.getElementById('jd_text').value,
+    contact: {
+      name: document.getElementById('c-name').value,
+      email: document.getElementById('c-email').value || null,
+      phone: document.getElementById('c-phone').value || null,
+      location: document.getElementById('c-location').value || null,
+      links: links,
+    },
+    experiences: collectExperiences(),
+    education: collectEducation(),
+    certifications: collectCertifications(),
+  };
+
+  try {
+    const res = await fetch('/api/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+
+    if (!res.ok) {
+      let detail = 'Something went wrong.';
+      try { detail = (await res.json()).detail || detail; } catch (_) {}
+      setStatus(detail, 'error');
+      btn.disabled = false;
+      return;
+    }
+
+    const cost = res.headers.get('X-Total-Cost-Usd');
+    const notes = res.headers.get('X-Notes');
+    const fill = res.headers.get('X-Page-Fill-Percent');
+
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'resume.docx';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+
+    let msg = `Done — resume downloaded. Cost: $${cost}. Page fill: ${fill}%.`;
+    if (notes) msg += ` Notes: ${notes}`;
+    setStatus(msg, 'success');
+  } catch (err) {
+    setStatus('Network error — the server may be waking up (free-tier cold start). Try again in a few seconds.', 'error');
+  } finally {
+    btn.disabled = false;
+  }
+});
+</script>
+
+</body>
+</html>

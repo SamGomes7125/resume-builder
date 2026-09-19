@@ -169,7 +169,7 @@ def load_profile(db) -> dict:
     }
 
 
-def build_prompt(application: JobApplication, profile: dict) -> str:
+def build_prompt(application, profile: dict) -> str:
     brief = application.brief
     return (
         f"Target role: {application.role_title} at {application.company_name}\n\n"
@@ -184,9 +184,18 @@ def build_prompt(application: JobApplication, profile: dict) -> str:
     )
 
 
-def generate(application: JobApplication, profile: dict) -> tuple[dict, dict]:
-    """Returns (result, usage)."""
-    client = anthropic.Anthropic()
+def generate(application, profile: dict, api_key: str | None = None) -> tuple[dict, dict]:
+    """Returns (result, usage).
+
+    application: a JobApplication row, OR any object exposing the same
+    attributes (role_title, company_name, jd_text, brief.role_reality,
+    brief.tech_stack_signals, brief.company_values) — the stateless web app
+    passes a lightweight stand-in rather than a database row.
+
+    api_key: pass explicitly for a multi-tenant caller. Falls back to
+    ANTHROPIC_API_KEY in the environment when omitted, as before.
+    """
+    client = anthropic.Anthropic(api_key=api_key) if api_key else anthropic.Anthropic()
 
     response = client.messages.create(
         model=MODEL,

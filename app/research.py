@@ -96,10 +96,18 @@ def _sum_usage(target: dict, usage) -> None:
 
 
 def run_research(
-    company_name: str, jd_text: str, role_title: str | None = None
+    company_name: str,
+    jd_text: str,
+    role_title: str | None = None,
+    api_key: str | None = None,
 ) -> tuple[dict, str, dict]:
-    """Returns (findings, raw_research_json, usage totals)."""
-    client = anthropic.Anthropic()
+    """Returns (findings, raw_research_json, usage totals).
+
+    api_key: pass explicitly for a multi-tenant caller (e.g. the stateless web
+    app, where each visitor supplies their own key). Falls back to
+    ANTHROPIC_API_KEY in the environment when omitted, as before.
+    """
+    client = anthropic.Anthropic(api_key=api_key) if api_key else anthropic.Anthropic()
 
     messages = [{"role": "user", "content": build_prompt(company_name, jd_text, role_title)}]
     usage_totals: dict[str, int] = {}
@@ -205,6 +213,20 @@ def print_cost(usage: dict) -> None:
             f"  web searches        {usage['web_search_requests']:>8,}  "
             "(billed separately, not included above)"
         )
+
+
+def cost_summary(usage: dict) -> dict:
+    """Same numbers as print_cost, as a dict — for the web app's JSON/header use."""
+    input_tokens = usage.get("input_tokens", 0)
+    output_tokens = usage.get("output_tokens", 0)
+    input_cost = input_tokens / 1_000_000 * INPUT_COST_PER_MTOK
+    output_cost = output_tokens / 1_000_000 * OUTPUT_COST_PER_MTOK
+    return {
+        "input_tokens": input_tokens,
+        "output_tokens": output_tokens,
+        "web_search_requests": usage.get("web_search_requests", 0),
+        "cost_usd": round(input_cost + output_cost, 4),
+    }
 
 
 def main() -> None:
